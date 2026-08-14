@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Draw Board</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;1,500&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --ink: #1f2a1c;
+    --paper: #f2ede1;
+    --stub: #e7ddc4;
+    --green: #2f4a34;
+    --green-deep: #1c3022;
+    --gold: #b8892b;
+    --red: #a13d2e;
+    --line: #c9bd9c;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--green-deep);
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(255,255,255,0.03), transparent 40%);
+    color: var(--ink);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 18px 12px 60px;
+  }
+
+  header{
+    text-align:center;
+    color: var(--paper);
+    margin: 10px 0 24px;
+  }
+  header .eyebrow{
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  header h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 34px;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+  }
+  header p{
+    font-size: 12px;
+    opacity: 0.75;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  .filters{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:center;
+    margin: 20px 0 26px;
+  }
+  .filters button{
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(242,237,225,0.35);
+    background: transparent;
+    color: var(--paper);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .filters button.active, .filters button:hover{
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--green-deep);
+  }
+
+  .board{
+    max-width: 640px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ticket{
+    background: var(--paper);
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    border: 1px solid var(--line);
+  }
+
+  .ticket .main{
+    flex: 1;
+    padding: 16px 14px;
+    position: relative;
+  }
+
+  .ticket .stub{
+    width: 78px;
+    flex-shrink:0;
+    background: var(--stub);
+    border-left: 2px dashed var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: 1px;
+    padding: 8px 0;
+    text-align:center;
+  }
+
+  .ticket .cat{
+    display:inline-block;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: var(--green);
+    color: var(--paper);
+    padding: 3px 8px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+  .ticket.electronics .cat{ background: var(--gold); color: var(--green-deep); }
+  .ticket.travel .cat{ background: var(--red); }
+
+  .ticket h3{
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+
+  .ticket .prize{
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .ticket .meta{
+    font-size: 11px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  .ticket a{
+    display:inline-block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--paper);
+    background: var(--ink);
+    text-decoration:none;
+    padding: 8px 14px;
+    border-radius: 20px;
+  }
+  .ticket a:hover{ background: var(--green); }
+
+  .deadline-soon{
+    color: var(--red);
+    font-weight: 700;
+  }
+
+  footer{
+    text-align:center;
+    color: var(--paper);
+    opacity: 0.55;
+    font-size: 10px;
+    margin-top: 34px;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 380px){
+    header h1{ font-size: 28px; }
+    .ticket .stub{ width: 60px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">No purchase necessary</div>
+  <h1>The Draw Board</h1>
+  <p>Legitimate, free-to-enter sweepstakes worth your two minutes. Snapshot taken August 14, 2026 — ask for a refresh anytime.</p>
+</header>
+
+<div class="filters">
+  <button class="active" data-filter="all">All</button>
+  <button data-filter="cash">Cash & Gift Cards</button>
+  <button data-filter="electronics">Electronics</button>
+  <button data-filter="travel">Travel</button>
+</div>
+
+<div class="board" id="board"></div>
+
+<footer>Always verify official rules on the sponsor's own site before entering.</footer>
+
+<script>
+const entries = [
+  {
+    cat: "cash", label: "CASH", tag: "01",
+    title: "My Best Buy Rewards $1,000 Giveaway",
+    prize: "10 winners × $1,000 Best Buy Certificate",
+    deadline: "Ends Oct 31, 2026",
+    meta: "US residents 18+. Enter via My Best Buy membership or mail-in entry.",
+    url: "https://www.bestbuy.com"
+  },
+  {
+    cat: "cash", label: "CASH", tag: "02",
+    title: "TLC / Food Network $5,000 Sweepstakes",
+    prize: "$5,000 cash",
+    deadline: "Ends Aug 20, 2026", soon: true,
+    meta: "Daily entry allowed — once on TLC.com, once on FoodNetwork.com.",
+    url: "https://www.tlc.com/giveaways"
+  },
+  {
+    cat: "cash", label: "CASH", tag: "03",
+    title: "Synchrony Bank $10,000 Cash Giveaway",
+    prize: "$10,000 grand prize + (5) $3,000 + (25) $1,000",
+    deadline: "Check site for close date",
+    meta: "Multiple cash tiers — good odds relative to single-winner draws.",
+    url: "https://www.winprizesonline.com/"
+  },
+  {
+    cat: "electronics", label: "TECH", tag: "04",
+    title: "Lenovo Legion 5 AMD Laptop Giveaway",
+    prize: "2 winners — Legion 5 Gen 10 (RTX 5060)",
+    deadline: "Ends Sept 1, 2026",
+    meta: "Open to US, Canada, UK & EU entrants 18+.",
+    url: "https://www.sweepsadvantage.com/laptop-sweepstakes"
+  },
+  {
+    cat: "electronics", label: "TECH", tag: "05",
+    title: "Best Buy 1,200-Prize Electronics Giveaway",
+    prize: "Samsung 55\" TVs, Dell XPS laptops, GoPro MAX2, Switch 2",
+    deadline: "Ends Aug 23, 2026", soon: true,
+    meta: "20 prize tiers, 60 winners each — huge total winner pool.",
+    url: "https://www.sweepsadvantage.com/best-buy-sweepstakes"
+  },
+  {
+    cat: "electronics", label: "TECH", tag: "06",
+    title: "ATK Gaming Gear 48th Round Giveaway",
+    prize: "Wireless gaming mouse + reward points + gift card (5 winners)",
+    deadline: "Ends Aug 17, 2026", soon: true,
+    meta: "Low-competition niche giveaway — good odds.",
+    url: "https://www.sweepsadvantage.com/browse-1.html"
+  },
+  {
+    cat: "travel", label: "TRIP", tag: "07",
+    title: "Win an Orlando Family Vacation",
+    prize: "Family vacation package, Orlando FL",
+    deadline: "Ends Oct 13, 2026",
+    meta: "US residents 21+, contiguous states + DC. One entry per day.",
+    url: "https://www.visitorlando.com/win-a-trip/"
+  },
+  {
+    cat: "travel", label: "TRIP", tag: "08",
+    title: "Via Rail Travel Vacation Vouchers",
+    prize: "1 of 6 vouchers valued at $5,000 each",
+    deadline: "Ends Aug 19, 2026", soon: true,
+    meta: "Straightforward single-entry sweepstakes.",
+    url: "https://www.sweepsadvantage.com/travel-sweepstakes"
+  },
+  {
+    cat: "travel", label: "TRIP", tag: "09",
+    title: "Travel + Leisure Georgia Festival Flyaway",
+    prize: "$5,000 Festival Rock Flight package",
+    deadline: "Ends Aug 14, 2026", soon: true,
+    meta: "Closing today — enter now if it interests you.",
+    url: "https://www.sweepsadvantage.com/travel-sweepstakes"
+  }
+];
+
+const board = document.getElementById('board');
+const filters = document.querySelectorAll('.filters button');
+
+function render(filter){
+  board.innerHTML = '';
+  entries
+    .filter(e => filter === 'all' || e.cat === filter)
+    .forEach(e => {
+      const el = document.createElement('div');
+      el.className = 'ticket ' + e.cat;
+      el.innerHTML = `
+        <div class="main">
+          <span class="cat">${e.label}</span>
+          <h3>${e.title}</h3>
+          <div class="prize">${e.prize}</div>
+          <div class="meta">${e.meta}<br><span class="${e.soon ? 'deadline-soon' : ''}">${e.deadline}</span></div>
+          <a href="${e.url}" target="_blank" rel="noopener">Enter →</a>
+        </div>
+        <div class="stub">NO. ${e.tag}</div>
+      `;
+      board.appendChild(el);
+    });
+}
+
+filters.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filters.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render(btn.dataset.filter);
+  });
+});
+
+render('all');
+</script>
+
+</body>
+</html>
