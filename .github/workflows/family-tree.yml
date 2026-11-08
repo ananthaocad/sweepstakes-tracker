@@ -1,0 +1,46 @@
+name: Organize family tree
+
+# Every time the website stores a new submission, rebuild family-tree/data/tree.json
+# (match names across entries, link parents/children/siblings/spouses) and commit it.
+on:
+  push:
+    paths:
+      - 'family-tree/data/submissions/**'
+      - 'family-tree/lib/**'
+      - 'family-tree/scripts/build-tree.js'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: family-tree-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Rebuild tree
+        run: node family-tree/scripts/build-tree.js
+      - name: Commit tree.json
+        run: |
+          git config user.name "family-tree-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add family-tree/data/tree.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update family tree"
+          for i in 1 2 3 4 5; do
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" || true
+            # Recompute after pulling so newer submissions are included.
+            node family-tree/scripts/build-tree.js
+            git add family-tree/data/tree.json
+            git diff --cached --quiet || git commit --amend --no-edit
+            git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 3))
+          done
+          exit 1

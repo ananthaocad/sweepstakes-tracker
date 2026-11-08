@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2f5d50">
+  <title>Our Family Tree</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌳</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    // ✏️ Change these to personalize the site.
+    window.SITE = {
+      title: 'Our Family Tree',
+      tagline: 'Help us connect every branch of the family — it takes about 3 minutes.',
+    };
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand"><span aria-hidden="true">🌳</span> <span id="site-title">Our Family Tree</span></a>
+    <nav>
+      <a href="#/tree">Tree</a>
+      <a href="#/invite">Invite</a>
+    </nav>
+  </header>
+  <main id="app" aria-live="polite"></main>
+  <datalist id="known-names"></datalist>
+  <script src="app.js"></script>
+</body>
+</html>

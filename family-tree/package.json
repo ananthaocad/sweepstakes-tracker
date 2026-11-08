@@ -1,0 +1,11 @@
+{
+  "name": "family-tree",
+  "private": true,
+  "type": "module",
+  "description": "Self-organizing family tree: submissions and photos are stored in GitHub.",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build-tree": "node scripts/build-tree.js",
+    "test": "node scripts/test-merge.js"
+  }
+}
