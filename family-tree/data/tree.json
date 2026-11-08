@@ -1,1 +1,12 @@
-{"people":[],"photos":[],"submissionToPerson":{},"stats":{"people":0,"contributors":0,"photos":0},"submissionCount":0}
+{
+ "people": [],
+ "photos": [],
+ "submissionToPerson": {},
+ "stats": {
+  "people": 0,
+  "contributors": 0,
+  "photos": 0
+ },
+ "generatedAt": "2026-11-08T06:03:50.563Z",
+ "submissionCount": 0
+}
