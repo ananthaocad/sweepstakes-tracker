@@ -12,6 +12,7 @@ const repoRoot = join(root, '..');
 process.env.GITHUB_TOKEN ||= 'local';
 process.env.GITHUB_REPO ||= 'local/local';
 process.env.FAMILY_KEY ||= 'test';
+process.env.ADMIN_KEY ||= 'admin';
 process.env.DATA_DIR ||= 'family-tree/data';
 
 const realFetch = globalThis.fetch;
@@ -22,7 +23,7 @@ globalThis.fetch = async (url, opts = {}) => {
   if ((opts.method || 'GET') === 'PUT') {
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, Buffer.from(JSON.parse(opts.body).content, 'base64'));
-    if (file.includes('/submissions/')) execFileSync('node', [join(root, 'scripts/build-tree.js')], { stdio: 'inherit' });
+    if (/\/(submissions|contributions|resolutions)\//.test(file)) execFileSync('node', [join(root, 'scripts/build-tree.js')], { stdio: 'inherit' });
     return new Response('{}', { status: 201 });
   }
   return existsSync(file) ? new Response(readFileSync(file)) : new Response('{}', { status: 404 });
@@ -53,4 +54,4 @@ http.createServer(async (req, res) => {
   if (!existsSync(file)) return res.status(404).send('Not found');
   res.setHeader('Content-Type', types[extname(file)] || 'application/octet-stream');
   res.end(readFileSync(file));
-}).listen(process.env.PORT || 3000, () => console.log(`Family tree running at http://localhost:${process.env.PORT || 3000}/?k=${process.env.FAMILY_KEY}`));
+}).listen(process.env.PORT || 3000, () => console.log(`Family tree running at http://localhost:${process.env.PORT || 3000}/?k=${process.env.FAMILY_KEY}  (admin: &admin=${process.env.ADMIN_KEY})`));

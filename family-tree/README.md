@@ -1,15 +1,17 @@
 # 🌳 Family Tree
 
 A self-organizing family tree website. Relatives open an invite link, answer a few simple
-questions (name, parents, grandparents, siblings, spouse, children, roots), add photos and tap
-faces to tag who's who. **Everything is stored in this GitHub repository**, and a GitHub Action
+questions (name, parents, grandparents, siblings, spouse, children, roots), write memories and
+anecdotes about their parents and grandparents, add photos and tap faces to tag who's who. **Everything is stored in this GitHub repository**, and a GitHub Action
 automatically connects every new entry into one tree. No manual work for admins.
 
 ## How it works
 
 ```
 Relative's phone ──► Website (Vercel) ──► GitHub repo: family-tree/data/
-                       │                    ├─ submissions/*.json  (one file per entry)
+                       │                    ├─ submissions/*.json   (one file per person who joined)
+                       │                    ├─ contributions/*.json (later stories, corrections, clues)
+                       │                    ├─ resolutions/*.json   (admin decisions on investigations)
                        │                    ├─ photos/*.jpg
                        │                    └─ tree.json           (built automatically)
                        └── reads tree.json ◄── GitHub Action "Organize family tree"
@@ -23,8 +25,39 @@ Relative's phone ──► Website (Vercel) ──► GitHub repo: family-tree/d
    - links parents ↔ children, spouses, siblings, and grandparents,
    - infers missing links (siblings share parents, a child's two parents are a couple),
    - lets people update their entry later (newest entry from the same phone wins; photos are kept).
-4. After submitting, each person gets **their own invite link** to share on WhatsApp, text or email,
+4. Nothing is ever overwritten — see *Stories, conflicting accounts & investigations* below.
+5. After submitting, each person gets **their own invite link** to share on WhatsApp, text or email,
    so the tree spreads through the family by itself.
+
+## Stories, conflicting accounts & investigations
+
+- **Stories:** while joining, people can write memories of each parent and grandparent (plus birth
+  year, birthplace, year of passing). For every story they say *how they know*: "I was there",
+  "Someone told me (who?)" or "From a document (which?)". Later, anyone can open a person's page
+  and **Add a memory** or **Suggest a correction**.
+- **Every account is kept.** Each fact is stored as a claim: who said it, how they're related, how they know.
+- **Investigation missions** open automatically when:
+  - relatives give different facts (born 1950 vs 1952; Kochi vs Mangalore),
+  - someone taps **"I remember it differently"** on a story,
+  - two entries look like the same person (Sita / Seetha, both mother of the same children),
+  - someone ends up with more than two parents.
+- Each mission (menu **Missions**) shows every version with who said it, collects **clues** from
+  family (text and a photo of a certificate, letter or picture), and lists the joined relatives who
+  might know, with an **Ask** button that sends them the mission link.
+- **Until an admin decides**, the tree shows a provisional answer: what the person said about
+  themselves wins, then what most relatives and clues agree on, then the account from the closest relative.
+- **Admins choose the main entry** ("Choose as main", "Same person — merge", "Mark verified"),
+  with a note about the evidence. The other versions stay stored and visible as
+  *other versions* / *Who said what*. Any decision can be **reopened**.
+
+### Admin link
+Admins open the site once with the admin key added:
+
+```
+https://YOUR-SITE.vercel.app/?k=YOUR_FAMILY_KEY&admin=YOUR_ADMIN_KEY
+```
+
+The browser remembers it. Share this link only with your co-admin (e.g. your cousin), never in family groups.
 
 ## One-time setup (about 10 minutes)
 
@@ -52,6 +85,7 @@ Repo **Settings → Actions → General → Workflow permissions → Read and wr
    | `GITHUB_BRANCH` | `main` |
    | `FAMILY_KEY` | a secret word only the family will know, e.g. `rao-banyan-1947` (letters, numbers, dashes) |
    | `DATA_DIR` | `family-tree/data` |
+   | `ADMIN_KEY` | a different, longer secret just for you and your co-admin (lets you settle investigations) |
 
 4. Click **Deploy**. Vercel gives you an address like `https://family-tree-abc.vercel.app`.
 
@@ -83,7 +117,7 @@ Edit `window.SITE` at the top of `public/index.html` to change the title and wel
 ```bash
 cd family-tree
 npm test                        # checks the tree-merging logic
-node scripts/dev-server.js      # local site at http://localhost:3000/?k=test (writes to ./data)
+node scripts/dev-server.js      # local site at http://localhost:3000/?k=test  (admin: &admin=admin; writes to ./data)
 node scripts/build-tree.js      # rebuild data/tree.json by hand
 ```
 Files: `public/` website · `api/` serverless functions that read/write GitHub · `lib/merge.js` the

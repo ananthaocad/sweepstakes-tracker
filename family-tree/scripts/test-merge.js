@@ -1,6 +1,6 @@
 // Quick self-check for the tree-merging logic: `npm test`
 import assert from 'node:assert/strict';
-import { buildTree, normalizeName, fuzzyNameMatch } from '../lib/merge.js';
+import { buildTree, normalizeName, fuzzyNameMatch, namesSimilar, compatible, missionId } from '../lib/merge.js';
 
 assert.equal(normalizeName('  Late Mr. Ramesh   RAO '), 'ramesh rao');
 assert.equal(normalizeName('José Álvarez'), 'jose alvarez');
@@ -73,4 +73,88 @@ assert.equal(photo.tags[0].personId, ramesh.id);
 assert.equal(photo.tags[1].name, 'Uncle Bob');
 assert.equal(ramesh.photo, null, 'group photo with 1 known tag + unknown is not used as profile');
 
-console.log(`OK — ${tree.stats.people} people, ${tree.stats.contributors} contributors`);
+
+// ---------- claims, stories, missions ----------
+assert.ok(namesSimilar('sita', 'seetha'));
+assert.ok(namesSimilar('lakshmi', 'laxmi'));
+assert.ok(!namesSimilar('ravi', 'rani'));
+assert.ok(compatible('birthPlace', 'Mysore', 'Mysore, Karnataka'));
+assert.ok(!compatible('birthPlace', 'Mysore', 'Mangalore'));
+
+const fam = [
+  {
+    id: 'f1', clientId: 'A', submittedAt: '2026-03-01T00:00:00Z',
+    self: { name: 'Anil Nair', gender: 'male', birthYear: '1980' },
+    father: { name: 'Mohan Nair', birthYear: '1950', birthPlace: 'Kochi' },
+    mother: { name: 'Seetha Nair' },
+    stories: [{ about: 'father', title: 'The bicycle', text: 'Dad cycled 20km to school every day.', source: 'told', sourceDetail: 'Grandma' }],
+  },
+  {
+    id: 'f2', clientId: 'B', submittedAt: '2026-03-02T00:00:00Z', invitedBy: 'f1',
+    self: { name: 'Bina Nair', birthYear: '1983' },
+    father: { name: 'Mohan Nair', birthYear: '1952', birthPlace: 'Kochi, Kerala' },
+    mother: { name: 'Sita Nair' },
+    siblings: ['Anil Nair'],
+  },
+  // Mohan himself joins later and gives his own birth year.
+  { id: 'f3', clientId: 'C', submittedAt: '2026-03-03T00:00:00Z', self: { name: 'Mohan Nair', birthYear: '1951' }, children: ['Anil Nair', 'Bina Nair'] },
+];
+let t = buildTree(fam);
+const find = n => t.people.find(p => p.aliases.includes(normalizeName(n)));
+let mohan = find('Mohan Nair');
+assert.equal(mohan.facts.birthYear.status, 'disputed');
+assert.equal(mohan.birthYear, 1951, 'self-reported value is the provisional main');
+assert.equal(mohan.facts.birthPlace.status, 'agreed', 'Kochi and "Kochi, Kerala" agree');
+assert.equal(mohan.birthPlace, 'Kochi, Kerala');
+assert.equal(mohan.claims.filter(c => c.field === 'birthYear').length, 3, 'every account is kept');
+const yearMission = t.missions.find(m => m.type === 'fact' && m.field === 'birthYear' && m.personIds[0] === mohan.id);
+assert.equal(yearMission.status, 'open');
+assert.equal(yearMission.options.length, 3);
+assert.equal(mohan.stories[0].title, 'The bicycle');
+assert.equal(mohan.stories[0].status, 'unverified');
+
+// Sita / Seetha: two entries, both mothers of Anil & Bina -> "same person?" mission
+const dup = t.missions.find(m => m.type === 'duplicate');
+assert.ok(dup, 'possible duplicate detected');
+const anil = find('Anil Nair');
+assert.equal(t.missions.find(m => m.type === 'parents' && m.personIds[0] === anil.id)?.type, 'parents', 'two mothers => parents mission');
+
+// Contributions: evidence, an alternative story version, a fact correction from someone who has not joined.
+const story = mohan.stories[0];
+const contributions = [
+  { id: 'c1', kind: 'evidence', submittedAt: '2026-03-04T00:00:00Z', by: 'f2', missionId: yearMission.id, supports: '1952', text: 'His school certificate says 1952', source: 'document' },
+  { id: 'c2', kind: 'story', submittedAt: '2026-03-05T00:00:00Z', by: 'f2', personId: mohan.id, replyTo: story.id, text: 'He walked, he only got the bicycle in college.', source: 'witnessed' },
+  { id: 'c3', kind: 'fact', submittedAt: '2026-03-06T00:00:00Z', byName: 'Uncle Raj', personId: mohan.id, field: 'deathYear', value: '' },
+];
+t = buildTree(fam, contributions);
+mohan = find('Mohan Nair');
+const sm = t.missions.find(m => m.type === 'story');
+assert.equal(sm.options.length, 2, 'two versions of the story');
+assert.ok(mohan.stories.every(s => s.status === 'disputed'));
+assert.equal(t.missions.find(m => m.id === yearMission.id).evidence[0].text, 'His school certificate says 1952');
+
+// Admin decisions
+const resolutions = [
+  { missionId: yearMission.id, type: 'fact', decision: { value: 1952 }, note: 'School certificate', resolvedBy: 'Admin', resolvedAt: '2026-03-07T00:00:00Z' },
+  { missionId: sm.id, type: 'story', decision: { main: sm.options[1].key }, resolvedBy: 'Admin', resolvedAt: '2026-03-07T00:00:00Z' },
+  { missionId: dup.id, type: 'duplicate', decision: { same: true, personIds: dup.personIds }, resolvedBy: 'Admin', resolvedAt: '2026-03-07T00:00:00Z' },
+];
+t = buildTree(fam, contributions, resolutions);
+mohan = find('Mohan Nair');
+assert.equal(mohan.birthYear, 1952);
+assert.equal(mohan.facts.birthYear.status, 'resolved');
+assert.equal(mohan.claims.filter(c => c.field === 'birthYear').length, 3, 'other accounts still stored');
+const main = mohan.stories.find(s => s.isMain);
+assert.match(main.text, /walked/);
+assert.equal(main.status, 'verified');
+const seetha = find('Sita Nair');
+assert.equal(seetha.id, find('Seetha Nair').id, 'merged');
+assert.deepEqual(find('Anil Nair').parents.sort(), [mohan.id, seetha.id].sort());
+assert.ok(!t.missions.some(m => m.type === 'parents' && m.status === 'open'), 'parent conflict disappears after merge');
+assert.equal(t.redirects[dup.personIds.find(id => id !== seetha.id)], seetha.id);
+
+// Reopening cancels a decision
+t = buildTree(fam, contributions, [...resolutions, { missionId: yearMission.id, decision: { reopen: true }, resolvedAt: '2026-03-08T00:00:00Z' }]);
+assert.equal(find('Mohan Nair').facts.birthYear.status, 'disputed');
+
+console.log(`OK — ${tree.stats.people} people, ${tree.stats.contributors} contributors; missions: ${t.missions.map(m => m.type + ':' + m.status).join(', ')}`);

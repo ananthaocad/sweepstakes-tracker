@@ -1,11 +1,13 @@
 name: Organize family tree
 
-# Every time the website stores a new submission, rebuild family-tree/data/tree.json
+# Every time the website stores a new submission, story, correction, evidence or admin decision, rebuild family-tree/data/tree.json
 # (match names across entries, link parents/children/siblings/spouses) and commit it.
 on:
   push:
     paths:
       - 'family-tree/data/submissions/**'
+      - 'family-tree/data/contributions/**'
+      - 'family-tree/data/resolutions/**'
       - 'family-tree/lib/**'
       - 'family-tree/scripts/build-tree.js'
   workflow_dispatch:

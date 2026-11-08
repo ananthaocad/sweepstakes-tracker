@@ -1,9 +1,9 @@
 // POST /api/submit { submission } -> stores data/submissions/<id>.json and returns { id }.
 // The GitHub Action then merges it into data/tree.json.
 import { guard, createFile, DATA_DIR, randomId } from './_lib/github.js';
+import { s, rel, story } from './_lib/clean.js';
 
-const s = (v, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const rel = r => (r && typeof r === 'object' && s(r.name) ? { name: s(r.name, 120), deceased: r.deceased === true, notes: s(r.notes, 1000) } : null);
+const ABOUT = /^(self|father|mother|fatherFather|fatherMother|motherFather|motherMother|spouse|sibling\d{1,2}|child\d{1,2})$/;
 const list = v => (Array.isArray(v) ? v.slice(0, 30).map(x => rel(typeof x === 'string' ? { name: x } : x)).filter(Boolean) : []);
 
 export default async function handler(req, res) {
@@ -34,6 +34,8 @@ export default async function handler(req, res) {
     siblings: list(b.siblings),
     children: list(b.children),
     origins: s(b.origins, 3000),
+    stories: (Array.isArray(b.stories) ? b.stories : []).slice(0, 50)
+      .filter(st => st && ABOUT.test(String(st.about))).map(st => ({ about: st.about, ...story(st) })).filter(st => st.text),
     profilePhoto: photoOk(b.profilePhoto) ? b.profilePhoto : null,
     photos: (Array.isArray(b.photos) ? b.photos : []).slice(0, 30).filter(p => p && photoOk(p.path)).map(p => ({
       path: p.path,
